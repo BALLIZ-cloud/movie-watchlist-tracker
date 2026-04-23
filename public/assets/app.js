@@ -59,6 +59,21 @@ function posterMarkup(movie) {
   return `<div class="poster-fallback">No poster</div>`;
 }
 
+function shortOverview(movie) {
+  const overview = String(movie.overview || '').trim();
+  if (!overview) {
+    return 'No synopsis available.';
+  }
+
+  const maxLength = 140;
+  if (overview.length <= maxLength) {
+    return overview;
+  }
+
+  const truncated = overview.slice(0, maxLength + 1).replace(/\s+\S*$/, '').trim();
+  return `${truncated || overview.slice(0, maxLength).trim()}...`;
+}
+
 function resultCard(movie) {
   const ids = watchlistIds();
   const isSaved = ids.has(movie.tmdb_id);
@@ -74,7 +89,7 @@ function resultCard(movie) {
           </div>
           <span class="pill ${isSaved ? 'pill-solid' : ''}">${isSaved ? 'Saved' : 'TMDB'}</span>
         </div>
-        <p class="movie-card__overview">${escapeHtml(movie.overview || 'No synopsis available.')}</p>
+        <p class="movie-card__overview">${escapeHtml(shortOverview(movie))}</p>
         <div class="movie-card__actions">
           <button class="ghost-button" data-action="add" data-id="${movie.tmdb_id}" ${isSaved ? 'disabled' : ''}>
             ${isSaved ? 'Already in watchlist' : 'Add to watchlist'}
@@ -97,7 +112,7 @@ function watchlistCard(movie) {
           </div>
           <span class="pill ${movie.watched ? 'pill-success' : 'pill-warning'}">${movie.watched ? 'Watched' : 'Queued'}</span>
         </div>
-        <p class="movie-card__overview">${escapeHtml(movie.overview || 'No synopsis available.')}</p>
+        <p class="movie-card__overview">${escapeHtml(shortOverview(movie))}</p>
         <div class="movie-card__actions">
           <button class="ghost-button" data-action="toggle" data-id="${movie.tmdb_id}">
             ${movie.watched ? 'Mark as queued' : 'Mark as watched'}
