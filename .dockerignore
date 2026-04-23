@@ -1,0 +1,13 @@
+.env
+.env.docker
+.git
+.gitignore
+.DS_Store
+__MACOSX
+DEPLOY.md
+docker-compose.yml
+docker/.DS_Store
+docker/mysql/
+tests/
+src/
+watchlist_backup.sql
