@@ -34,8 +34,16 @@ function load_env_file(string $path): void
 
 function env_value(string $key, string $default = ''): string
 {
-    $value = $_ENV[$key] ?? $_SERVER[$key] ?? getenv($key);
-    if ($value === false || $value === null || $value === '') {
+    if (array_key_exists($key, $_ENV)) {
+        return (string) $_ENV[$key];
+    }
+
+    if (array_key_exists($key, $_SERVER)) {
+        return (string) $_SERVER[$key];
+    }
+
+    $value = getenv($key);
+    if ($value === false || $value === null) {
         return $default;
     }
 

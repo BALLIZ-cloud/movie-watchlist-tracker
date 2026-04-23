@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use PDO;
-
 function load_env_file(string $path): void
 {
     if (!is_file($path)) {
@@ -36,8 +34,16 @@ function load_env_file(string $path): void
 
 function env_value(string $key, string $default = ''): string
 {
-    $value = $_ENV[$key] ?? $_SERVER[$key] ?? getenv($key);
-    if ($value === false || $value === null || $value === '') {
+    if (array_key_exists($key, $_ENV)) {
+        return (string) $_ENV[$key];
+    }
+
+    if (array_key_exists($key, $_SERVER)) {
+        return (string) $_SERVER[$key];
+    }
+
+    $value = getenv($key);
+    if ($value === false || $value === null) {
         return $default;
     }
 
@@ -52,6 +58,32 @@ function json_response(array $payload, int $statusCode = 200): never
     exit;
 }
 
+function database_error_message(PDOException $exception): string
+{
+    $message = $exception->getMessage();
+
+    if (str_contains($message, '[2002]')) {
+        return sprintf(
+            'Could not connect to MySQL at %s:%s. Start the database server or update DB_HOST/DB_PORT in .env.',
+            env_value('DB_HOST', '127.0.0.1'),
+            env_value('DB_PORT', '3307')
+        );
+    }
+
+    if (str_contains($message, '[1045]')) {
+        return 'MySQL rejected the configured username or password. Update DB_USER/DB_PASS in .env.';
+    }
+
+    if (str_contains($message, '[1049]')) {
+        return sprintf(
+            'The MySQL database "%s" does not exist yet. Create it and import watchlist_backup.sql.',
+            env_value('DB_NAME', 'movie_watchlist')
+        );
+    }
+
+    return 'Database request failed. Verify your MySQL server is running and the settings in .env are correct.';
+}
+
 function db_connection(): PDO
 {
     static $pdo = null;
@@ -62,7 +94,7 @@ function db_connection(): PDO
     $dsn = sprintf(
         'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
         env_value('DB_HOST', '127.0.0.1'),
-        (int) env_value('DB_PORT', '3306'),
+        (int) env_value('DB_PORT', '3307'),
         env_value('DB_NAME', 'movie_watchlist')
     );
 
@@ -314,6 +346,11 @@ try {
         'ok' => false,
         'message' => $exception->getMessage(),
     ], 422);
+} catch (PDOException $exception) {
+    json_response([
+        'ok' => false,
+        'message' => database_error_message($exception),
+    ], 503);
 } catch (RuntimeException $exception) {
     json_response([
         'ok' => false,
